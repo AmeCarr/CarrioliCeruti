@@ -41,12 +41,21 @@ sig UploadedData{}
 //Picture of parking reportings
 sig Picture{}
 
-//Both privates and authorities must make one
 sig Registration{
-		
-		username: one Username,
-		password: one Password
 
+		password: one Password
+}
+
+//Privates must make a Registration
+sig PrivateRegistration extends Registration{
+		
+		username: one Username
+}
+
+//Authoritues must make a Registration
+sig AuthorityRegistration extends Registration{
+		
+		authorityID: one AuthorityID
 }
 
 //Any tipe of reporting
@@ -71,7 +80,7 @@ sig AccidentReporting extends Reporting{
 sig SpeedReporting, TrafficLightReporting extends Reporting{}
 
 //User can be both private or authoritie
-abstract sig User{
+sig User{
 
 		registration: one Registration,
 		position: lone Position,
@@ -108,3 +117,82 @@ one sig GPS_Request_Accepted extends Request_Result{}
 one sig GPS_Request_Refused extends Request_Result{}
 
 //------------------------------------------------------------------------- FACTS-------------------------------------------------------------------------
+
+//All UserName have to be associated with a Private
+fact UserNamePrivateConnection{
+
+		all u: Username | some p: Private | u in p.username
+}
+
+//All AuthorityID have to be associated with a Authority
+fact AuthorityIDAuthorityConnection{
+
+		all ID: AuthorityID | some a: Authority | ID in a.authorityID
+}
+
+
+//All Usernames have to be associated to a PrivateRegistration
+fact UsernameRegistrationConnection{
+
+		all u: Username | some p: PrivateRegistration | u in p.username
+}
+
+//All AuthorityID have to be associated to a PrivateRegistration
+fact AuthotityIDRegistrationConnection{
+		
+		all ID: AuthorityID | some a: AuthorityRegistration | ID in a.authorityID
+}
+
+
+//All Passwords have to be associated to a Registration
+fact PasswordRegistrationConnection{
+
+		all p: Password | some r: Registration | p in r.password
+}
+
+//Every Private has a unique Username
+fact PrivateUniqueUsername{
+
+		no disj p1, p2: Private | p1.username = p2.username
+}
+
+//Every Authority has a unique AuthorityID
+fact AuthorityUniqueAuthorityID{
+
+		no disj a1, a2: Authority | a1.authorityID = a2.authorityID
+}
+
+//Every User has a unique Email
+fact UserUniqueEmail{
+
+		no disj u1, u2: User | u1.email = u2.email
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
