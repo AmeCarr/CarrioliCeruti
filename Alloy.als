@@ -3,6 +3,7 @@ open util/boolean
 
 
 //-------------------------------------------------------------------SIGS--------------------------------------------------------------------------------
+
 // Date and time of every reporting
 sig TimeStamp{
 
@@ -16,18 +17,23 @@ sig Position{
 		latitude: one Int,
 		longitude: one Int
 }
+//latitude >= -90 and latitude <= 90 and longitude >= -180 and longitude <= 180
+{latitude >= -3 and latitude <= 3 and longitude >= -6 and longitude <= 6}
+
+//String, name of private or authority
+abstract sig Username{}
+
+//String, only authotities have one
+sig AuthorityID extends Username{}
 
 //String, only private users have one
-sig Username{}
+sig PrivateUsername extends Username{}
 
 //Both privates and authorities have one
 sig Email{}
 
 //Both privates and authorities have one
 sig Password{}
-
-//String, only authotities have one
-sig AuthorityID{}
 
 //String, every vehicle has one
 sig LicensePlate{}
@@ -49,7 +55,7 @@ sig Registration{
 //Privates must make a Registration
 sig PrivateRegistration extends Registration{
 		
-		username: one Username
+		privateUsername: one PrivateUsername
 }
 
 //Authoritues must make a Registration
@@ -60,10 +66,12 @@ sig AuthorityRegistration extends Registration{
 
 //Any tipe of reporting
 sig Reporting{
-
+		
+		reportingID: String,
 		position: one Position,
 		timestamp: one TimeStamp,
-		username: one Username
+		username: one Username,
+		anonimity: one Anonimity
 }
 
 sig ParkingReporting extends Reporting{
@@ -89,7 +97,7 @@ sig User{
 
 sig Private extends User{
 
-		username: one Username,
+		privateUsername: one PrivateUsername,
 		reportings: set Reporting
 }
 
@@ -107,7 +115,7 @@ sig GPS_Request {
 }
 
 //Result of the GPS request
-abstract sig Request_Result {
+abstract sig Request_Result{
 
 	request: one GPS_Request
 }
@@ -116,12 +124,26 @@ one sig GPS_Request_Accepted extends Request_Result{}
 
 one sig GPS_Request_Refused extends Request_Result{}
 
+sig Suggestion{}
+
+sig Map{
+
+		reportings: set Reporting
+}
+
+sig ColoredArea{}
+
+abstract sig Anonimity{}
+
+sig True extends Anonimity{}
+
+sig Talse extends Anonimity{}
 //------------------------------------------------------------------------- FACTS-------------------------------------------------------------------------
 
-//All UserName have to be associated with a Private
+//All PrivateUsername have to be associated with a Private
 fact UserNamePrivateConnection{
 
-		all u: Username | some p: Private | u in p.username
+		all u: PrivateUsername | some p: Private | u in p.privateUsername
 }
 
 //All AuthorityID have to be associated with a Authority
@@ -134,7 +156,7 @@ fact AuthorityIDAuthorityConnection{
 //All Usernames have to be associated to a PrivateRegistration
 fact UsernameRegistrationConnection{
 
-		all u: Username | some p: PrivateRegistration | u in p.username
+		all u: PrivateUsername | some p: PrivateRegistration | u in p.privateUsername
 }
 
 //All AuthorityID have to be associated to a PrivateRegistration
@@ -151,21 +173,34 @@ fact PasswordRegistrationConnection{
 }
 
 //Every Private has a unique Username
-fact PrivateUniqueUsername{
+fact UniquePrivateUsername{
 
-		no disj p1, p2: Private | p1.username = p2.username
+		no disjoint p1, p2: Private | p1.privateUsername = p2.privateUsername
 }
 
 //Every Authority has a unique AuthorityID
 fact AuthorityUniqueAuthorityID{
 
-		no disj a1, a2: Authority | a1.authorityID = a2.authorityID
+		no disjoint a1, a2: Authority | a1.authorityID = a2.authorityID
 }
 
 //Every User has a unique Email
 fact UserUniqueEmail{
 
-		no disj u1, u2: User | u1.email = u2.email
+		no disjoint u1, u2: User | u1.email = u2.email
+}
+
+//Every  request  can  be  either  accepted  or refused, not  both.  
+fact GPS_requestAcceptedOrRefused{
+
+		all GPS: GPS_Request | (some rr: Request_Result  | GPS in rr.request) and 
+		(no disjoint rr1, rr2: Request_Result | GPS in rr1.request and GPS in rr2.request)
+}
+
+//All Reportings have to be associated with a user
+fact ReportingUniqueUser{
+
+		all r: Reporting | some u: Username | u in r.username
 }
 
 
