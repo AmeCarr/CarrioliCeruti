@@ -1,6 +1,4 @@
 open util/integer
-open util/boolean
-
 
 //-------------------------------------------------------------------SIGS--------------------------------------------------------------------------------
 
@@ -38,24 +36,19 @@ sig Password{}
 //String, every vehicle has one
 sig LicensePlate{}
 
-//Data that were downloaded by authorities
-sig DownloadedData{}
-
-//Data that were uploaded by authorities
-sig UploadedData{}
-
 //Picture of parking reportings
 sig Picture{}
 
 sig Registration{
 
-		password: one Password
+		password: one Password,
 }
 
 //Privates must make a Registration
 sig PrivateRegistration extends Registration{
 		
-		privateUsername: one PrivateUsername
+		privateUsername: one PrivateUsername,
+		GPS_RequestResult: one Request_Result
 }
 
 //Authoritues must make a Registration
@@ -77,6 +70,7 @@ sig Reporting{
 sig ParkingReporting extends Reporting{
 		
 		picture: lone Picture,
+		licensePlate: lone LicensePlate
 }
 
 sig AccidentReporting extends Reporting{
@@ -85,14 +79,17 @@ sig AccidentReporting extends Reporting{
 		carInvolved: set LicensePlate
 }
 
-sig SpeedReporting, TrafficLightReporting extends Reporting{}
+sig SpeedReporting, TrafficLightReporting extends Reporting{
+		licensePlate: lone LicensePlate
+}
 
 //User can be both private or authoritie
 sig User{
 
 		registration: one Registration,
 		position: lone Position,
-		email: one Email
+		email: one Email,
+		see : Map
 }
 
 sig Private extends User{
@@ -104,8 +101,8 @@ sig Private extends User{
 sig Authority extends User{
 
 		authorityID: one AuthorityID,
-		downloadedData: set DownloadedData,
-		uploadedData: set UploadedData
+		downloadedData: set ParkingReporting,
+		uploadedData: set AccidentReporting
 }
 
 //Made at the sign up
@@ -124,20 +121,20 @@ one sig GPS_Request_Accepted extends Request_Result{}
 
 one sig GPS_Request_Refused extends Request_Result{}
 
-sig Suggestion{}
+one sig Map{
 
-sig Map{
+		reportings: set Reporting,
+		watchers: set User
+}
+{ #watchers < #User}
 
-		reportings: set Reporting
+abstract sig Anonimity{
+		
 }
 
-sig ColoredArea{}
+sig AnonimityTrue extends Anonimity{}
 
-abstract sig Anonimity{}
-
-sig True extends Anonimity{}
-
-sig Talse extends Anonimity{}
+sig AnonimityFalse extends Anonimity{}
 //------------------------------------------------------------------------- FACTS-------------------------------------------------------------------------
 
 //All PrivateUsername have to be associated with a Private
@@ -153,13 +150,13 @@ fact AuthorityIDAuthorityConnection{
 }
 
 
-//All Usernames have to be associated to a PrivateRegistration
+//All PrivateUsernames have to be associated to a PrivateRegistration
 fact UsernameRegistrationConnection{
 
 		all u: PrivateUsername | some p: PrivateRegistration | u in p.privateUsername
 }
 
-//All AuthorityID have to be associated to a PrivateRegistration
+//All AuthorityID have to be associated to a AuthotityRegistration
 fact AuthotityIDRegistrationConnection{
 		
 		all ID: AuthorityID | some a: AuthorityRegistration | ID in a.authorityID
@@ -170,6 +167,10 @@ fact AuthotityIDRegistrationConnection{
 fact PasswordRegistrationConnection{
 
 		all p: Password | some r: Registration | p in r.password
+}
+
+fact RegistrationUserConnection{
+		all r:Registration | some u:User | r in u.registration
 }
 
 //Every Private has a unique Username
@@ -203,14 +204,27 @@ fact ReportingUniqueUser{
 		all r: Reporting | some u: Username | u in r.username
 }
 
+//All reportings on map have to be anonymous or not
+assert reportingAnonimity{
+		no anonimity:Map.reportings.anonimity | (anonimity in AnonimityTrue) and (anonimity in AnonimityFalse)	
+}
 
+//the map is seen only by registered users
+assert MapSeenByRegisteredUsers{
+		all w:Map.watchers | some u:User | w in u
+}
 
+check MapSeenByRegisteredUsers for 5 
 
+check reportingAnonimity for 5
 
+-----------------------------------------------PREDICATES------------------------------------------------------------------------
+pred world1{
+		#Authority = 1
+		#Private = 2
+}
 
-
-
-
+run world1 for 5 but 1 Reporting
 
 
 
